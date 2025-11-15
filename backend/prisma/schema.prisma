@@ -1,0 +1,272 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum PostType {
+  MICRO      // Short text + images
+  ARTICLE    // Long-form content
+  PROJECT    // Portfolio piece
+  REEL       // Short video
+}
+
+enum ReactionType {
+  LIKE
+  INSIGHTFUL
+  CURIOUS
+}
+
+enum NotificationType {
+  FOLLOW
+  COMMENT
+  REACTION
+  MENTION
+  MESSAGE
+}
+
+model User {
+  id            String    @id @default(uuid())
+  username      String    @unique
+  email         String    @unique
+  password      String
+  name          String
+  bio           String?   @db.Text
+  avatarUrl     String?
+  coverUrl      String?
+  role          Role      @default(USER)
+  emailVerified Boolean   @default(false)
+  banned        Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  profile          Profile?
+  posts            Post[]
+  comments         Comment[]
+  reactions        Reaction[]
+  followers        Follow[]          @relation("UserFollowers")
+  following        Follow[]          @relation("UserFollowing")
+  sentMessages     Message[]         @relation("SentMessages")
+  receivedMessages Message[]         @relation("ReceivedMessages")
+  notifications    Notification[]
+  media            Media[]
+  sessions         Session[]
+  subscriptions    Subscription[]    @relation("Creator")
+  subscribedTo     Subscription[]    @relation("Subscriber")
+
+  @@index([username])
+  @@index([email])
+  @@index([createdAt])
+}
+
+model Profile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  location        String?
+  website         String?
+  skills          String[] // Array of skill tags
+  pinnedProjectId String?
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Post {
+  id        String   @id @default(uuid())
+  authorId  String
+  type      PostType
+  title     String?
+  content   String   @db.Text
+  metadata  Json?    // Flexible storage for type-specific data
+  published Boolean  @default(true)
+  scheduled DateTime?
+  views     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  author    User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  media     Media[]
+  comments  Comment[]
+  reactions Reaction[]
+  topics    PostTopic[]
+  
+  @@index([authorId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([published])
+}
+
+model Media {
+  id        String   @id @default(uuid())
+  postId    String?
+  userId    String
+  url       String
+  thumbnailUrl String?
+  type      String   // image, video, audio, pdf
+  mimeType  String
+  width     Int?
+  height    Int?
+  size      Int      // in bytes
+  blurhash  String?
+  duration  Int?     // for video/audio in seconds
+  createdAt DateTime @default(now())
+
+  post Post? @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([userId])
+  @@index([type])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  postId    String
+  authorId  String
+  parentId  String?  // For threaded comments
+  content   String   @db.Text
+  edited    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  post     Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  Comment[] @relation("CommentReplies")
+
+  @@index([postId])
+  @@index([authorId])
+  @@index([parentId])
+  @@index([createdAt])
+}
+
+model Reaction {
+  id        String       @id @default(uuid())
+  postId    String
+  userId    String
+  type      ReactionType
+  createdAt DateTime     @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId]) // One reaction per user per post
+  @@index([postId])
+  @@index([userId])
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  senderId   String
+  receiverId String
+  content    String   @db.Text
+  readAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  sender   User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  payload   Json             // Flexible data for each notification type
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+}
+
+model Topic {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?  @db.Text
+  coverUrl    String?
+  postCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  posts PostTopic[]
+
+  @@index([slug])
+  @@index([postCount])
+}
+
+model PostTopic {
+  postId  String
+  topicId String
+
+  post  Post  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([postId, topicId])
+  @@index([postId])
+  @@index([topicId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  refreshToken String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([refreshToken])
+}
+
+model Subscription {
+  id          String   @id @default(uuid())
+  subscriberId String
+  creatorId   String
+  tier        String   // basic, premium, etc.
+  active      Boolean  @default(true)
+  startDate   DateTime @default(now())
+  endDate     DateTime?
+
+  subscriber User @relation("Subscriber", fields: [subscriberId], references: [id], onDelete: Cascade)
+  creator    User @relation("Creator", fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriberId, creatorId])
+  @@index([subscriberId])
+  @@index([creatorId])
+}
