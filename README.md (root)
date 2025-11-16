@@ -1,0 +1,40 @@
+# Exposia - Next-Generation Social Research Platform
+
+<div align="center">
+  <img src="https://via.placeholder.com/150x150/6366f1/ffffff?text=Exposia" alt="Exposia Logo" />
+  
+  <p><strong>Where researchers, innovators, and curious minds connect</strong></p>
+
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![Node.js](https://img.shields.io/badge/Node.js-20.x-green.svg)](https://nodejs.org/)
+  [![Next.js](https://img.shields.io/badge/Next.js-14.x-black.svg)](https://nextjs.org/)
+  [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
+</div>
+
+---
+
+## 🚀 Features
+
+### Core Features
+- **Multiple Content Types**: Micro posts, articles, projects, and reels
+- **Real-time Communication**: WebSocket-powered instant messaging and notifications
+- **Advanced Feed Algorithm**: Personalized content based on interests and connections
+- **Topic-based Discovery**: Explore content by research areas and interests
+- **Rich Media Support**: Images, videos, audio, and PDFs with optimized delivery
+- **Profile Customization**: Showcase skills, projects, and achievements
+- **Social Interactions**: Follow, react, comment, and collaborate
+- **Dark Mode**: Beautiful UI that adapts to user preferences
+
+### Technical Highlights
+- **Monorepo Architecture**: Organized workspace with frontend and backend
+- **Type-safe**: End-to-end TypeScript with Prisma ORM
+- **Real-time Updates**: Socket.io integration for live features
+- **Scalable Storage**: S3-compatible media storage (AWS S3 or MinIO)
+- **Production-ready**: Docker containerization and comprehensive error handling
+- **Testing**: Jest integration for unit and integration tests
+- **Security**: JWT authentication, rate limiting, and input validation
+
+---
+
+## 🏗️ Architecture
+
