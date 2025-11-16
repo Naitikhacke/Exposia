@@ -25,4 +25,19 @@ export async function sendVerificationEmail(email: string, name: string) {
 }
 
 export async function sendPasswordResetEmail(email: string, name: string) {
-  const resetUrl =
+  const resetUrl = `${process.env.FRONTEND_URL}/reset-password/token`;
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM,
+    to: email,
+    subject: 'Reset your Exposia password',
+    html: `
+      <h1>Password Reset Request</h1>
+      <p>Hi ${name},</p>
+      <p>You requested to reset your password. Click the link below to proceed:</p>
+      <a href="${resetUrl}">Reset Password</a>
+      <p>If you didn't request this, please ignore this email.</p>
+    `,
+  });
+}
+
